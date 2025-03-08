@@ -46,7 +46,7 @@ const Login = () => {
                 <img 
                     src="https://i.ibb.co/pBySDZwN/logo.png" 
                     alt="Logo da Empresa" 
-                    className="w-32 h-auto"
+                    className="w-128 h-auto"
                 />
             </div>
 
