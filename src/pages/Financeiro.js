@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Layout from "../components/Layout";
 import { jsPDF } from "jspdf";
+import API_BASE_URL from "../config";
 
 const Financeiro = () => {
     const [despesas, setDespesas] = useState([]);
@@ -13,7 +14,7 @@ const Financeiro = () => {
 
     // Buscar despesas da API
     useEffect(() => {
-        fetch("http://127.0.0.1:8000/api/financeiro/")
+        fetch(`${API_BASE_URL}/api/financeiro/`)
             .then((res) => res.json())
             .then((data) => setDespesas(data))
             .catch((err) => console.error("Erro ao carregar despesas:", err));
@@ -28,14 +29,14 @@ const Financeiro = () => {
 
         const novaDespesa = { descricao, valor, categoria, data };
 
-        fetch("http://127.0.0.1:8000/api/financeiro/", {
+        fetch(`${API_BASE_URL}/api/financeiro/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(novaDespesa),
         })
-        .then((res) => res.json())
-        .then((data) => setDespesas([...despesas, data]))
-        .catch((err) => console.error("Erro ao adicionar despesa:", err));
+            .then((res) => res.json())
+            .then((data) => setDespesas([...despesas, data]))
+            .catch((err) => console.error("Erro ao adicionar despesa:", err));
 
         setDescricao("");
         setValor("");
@@ -55,7 +56,10 @@ const Financeiro = () => {
         doc.text("Relatório Financeiro", 20, 10);
         let y = 20;
         despesasPaginadas.forEach((despesa, index) => {
-            doc.text(`${index + 1}. ${despesa.data} - ${despesa.descricao}: R$ ${despesa.valor} (${despesa.categoria})`, 20, y);
+            doc.text(
+                `${index + 1}. ${despesa.data} - ${despesa.descricao}: R$ ${despesa.valor} (${despesa.categoria})`,
+                20, y
+            );
             y += 10;
         });
         doc.save("Relatorio_Financeiro.pdf");
@@ -69,10 +73,31 @@ const Financeiro = () => {
                 {/* Formulário de Cadastro */}
                 <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg">
                     <h2 className="text-xl font-semibold mb-4">Nova Despesa</h2>
-                    <input type="text" placeholder="Descrição" className="w-full p-2 border rounded mb-3" value={descricao} onChange={(e) => setDescricao(e.target.value)} />
-                    <input type="number" placeholder="Valor (R$)" className="w-full p-2 border rounded mb-3" value={valor} onChange={(e) => setValor(e.target.value)} />
-                    <input type="date" className="w-full p-2 border rounded mb-3" value={data} onChange={(e) => setData(e.target.value)} />
-                    <select className="w-full p-2 border rounded mb-3" value={categoria} onChange={(e) => setCategoria(e.target.value)}>
+                    <input
+                        type="text"
+                        placeholder="Descrição"
+                        className="w-full p-2 border rounded mb-3"
+                        value={descricao}
+                        onChange={(e) => setDescricao(e.target.value)}
+                    />
+                    <input
+                        type="number"
+                        placeholder="Valor (R$)"
+                        className="w-full p-2 border rounded mb-3"
+                        value={valor}
+                        onChange={(e) => setValor(e.target.value)}
+                    />
+                    <input
+                        type="date"
+                        className="w-full p-2 border rounded mb-3"
+                        value={data}
+                        onChange={(e) => setData(e.target.value)}
+                    />
+                    <select
+                        className="w-full p-2 border rounded mb-3"
+                        value={categoria}
+                        onChange={(e) => setCategoria(e.target.value)}
+                    >
                         <option value="Trabalhadores">Trabalhadores</option>
                         <option value="Combustível">Combustível</option>
                         <option value="Descarregamento">Descarregamento</option>
@@ -82,7 +107,12 @@ const Financeiro = () => {
                         <option value="Construção">Construção</option>
                     </select>
 
-                    <button onClick={handleAddDespesa} className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Adicionar Despesa</button>
+                    <button
+                        onClick={handleAddDespesa}
+                        className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+                    >
+                        Adicionar Despesa
+                    </button>
                 </div>
 
                 {/* Tabela de Despesas */}
@@ -122,16 +152,21 @@ const Financeiro = () => {
                         {[...Array(totalPaginas)].map((_, index) => (
                             <button
                                 key={index}
-                                className={`px-3 py-1 rounded ${paginaAtual === index + 1 ? "bg-blue-500 text-white" : "bg-gray-300 text-gray-700"}`}
+                                className={`px-3 py-1 rounded ${
+                                    paginaAtual === index + 1 ? "bg-blue-500 text-white" : "bg-gray-300 text-gray-700"
+                                }`}
                                 onClick={() => setPaginaAtual(index + 1)}
                             >
                                 {index + 1}
                             </button>
                         ))}
                     </div>
-                    
+
                     {/* Botão de Exportar PDF */}
-                    <button onClick={() => exportarPDF()} className="mt-6 bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition duration-200">
+                    <button
+                        onClick={exportarPDF}
+                        className="mt-6 bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition duration-200"
+                    >
                         Exportar PDF
                     </button>
                 </div>

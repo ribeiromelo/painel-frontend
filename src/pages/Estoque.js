@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Layout from "../components/Layout";
+import API_BASE_URL from "../config";
 
 const Estoque = () => {
     const [produtos, setProdutos] = useState([]);
@@ -11,7 +12,7 @@ const Estoque = () => {
 
     // Carregar produtos da API
     useEffect(() => {
-        fetch("http://127.0.0.1:8000/api/estoque/")
+        fetch(`${API_BASE_URL}/api/estoque/`)
             .then((res) => res.json())
             .then((data) => setProdutos(data))
             .catch((err) => console.error("Erro ao carregar produtos:", err));
@@ -26,17 +27,17 @@ const Estoque = () => {
         const novoProduto = {
             nome,
             quantidade,
-            unidade
+            unidade,
         };
 
-        fetch("http://127.0.0.1:8000/api/estoque/", {
+        fetch(`${API_BASE_URL}/api/estoque/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(novoProduto),
         })
-        .then((res) => res.json())
-        .then((data) => setProdutos([...produtos, data]))
-        .catch((err) => console.error("Erro ao adicionar produto:", err));
+            .then((res) => res.json())
+            .then((data) => setProdutos([...produtos, data]))
+            .catch((err) => console.error("Erro ao adicionar produto:", err));
 
         setNome("");
         setQuantidade("");
@@ -57,11 +58,27 @@ const Estoque = () => {
                 {/* Formulário de Cadastro */}
                 <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg">
                     <h2 className="text-xl font-semibold mb-4">Novo Produto</h2>
-                    <input type="text" placeholder="Nome do Produto" className="w-full p-2 border rounded mb-3" value={nome} onChange={(e) => setNome(e.target.value)} />
-                    <input type="number" placeholder="Quantidade" className="w-full p-2 border rounded mb-3" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
-                    
+                    <input
+                        type="text"
+                        placeholder="Nome do Produto"
+                        className="w-full p-2 border rounded mb-3"
+                        value={nome}
+                        onChange={(e) => setNome(e.target.value)}
+                    />
+                    <input
+                        type="number"
+                        placeholder="Quantidade"
+                        className="w-full p-2 border rounded mb-3"
+                        value={quantidade}
+                        onChange={(e) => setQuantidade(e.target.value)}
+                    />
+
                     {/* Dropdown para unidade de medida */}
-                    <select className="w-full p-2 border rounded mb-3" value={unidade} onChange={(e) => setUnidade(e.target.value)}>
+                    <select
+                        className="w-full p-2 border rounded mb-3"
+                        value={unidade}
+                        onChange={(e) => setUnidade(e.target.value)}
+                    >
                         <option value="sacas">Sacas</option>
                         <option value="litros">Litros</option>
                         <option value="pacotes">Pacotes</option>
@@ -70,7 +87,12 @@ const Estoque = () => {
                         <option value="garrafas">Garrafas</option>
                     </select>
 
-                    <button onClick={handleAddProduto} className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Adicionar Produto</button>
+                    <button
+                        onClick={handleAddProduto}
+                        className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+                    >
+                        Adicionar Produto
+                    </button>
                 </div>
 
                 {/* Tabela de Produtos */}

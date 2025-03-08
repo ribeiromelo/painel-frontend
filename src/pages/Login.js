@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import API_BASE_URL from "../config";
 
 const Login = () => {
     const [username, setUsername] = useState("");
@@ -12,7 +13,7 @@ const Login = () => {
         setError(""); // Limpa erros anteriores
 
         try {
-            const response = await fetch("http://127.0.0.1:8000/auth/login/", {
+            const response = await fetch(`${API_BASE_URL}/auth/login/`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -30,21 +31,22 @@ const Login = () => {
                 // Redireciona para o painel
                 navigate("/dashboard");
             } else {
-                setError("Usuário ou senha inválidos!");
+                setError(data?.detail || "Usuário ou senha inválidos!");
             }
         } catch (error) {
-            setError("Erro ao conectar ao servidor.");
+            console.error("Erro na autenticação:", error);
+            setError("Erro ao conectar ao servidor. Verifique sua conexão.");
         }
     };
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-            {/* LOGOMARCA - Adicione sua imagem aqui */}
+            {/* LOGOMARCA */}
             <div className="mb-6">
                 <img 
                     src="https://i.ibb.co/pBySDZwN/logo.png" 
                     alt="Logo da Empresa" 
-                    className="w-128 h-auto"
+                    className="w-32 h-auto"
                 />
             </div>
 

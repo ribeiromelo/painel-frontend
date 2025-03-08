@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Layout from "../components/Layout";
 import { jsPDF } from "jspdf";
+import API_BASE_URL from "../config";
 
 const Credito = () => {
     const [creditos, setCreditos] = useState([]);
@@ -12,7 +13,7 @@ const Credito = () => {
 
     // Carregar créditos da API
     useEffect(() => {
-        fetch("http://127.0.0.1:8000/api/credito/")
+        fetch(`${API_BASE_URL}/api/credito/`)
             .then((res) => res.json())
             .then((data) => setCreditos(data))
             .catch((err) => console.error("Erro ao carregar créditos:", err));
@@ -24,15 +25,15 @@ const Credito = () => {
             alert("Preencha todos os campos obrigatórios!");
             return;
         }
-    
+
         const novoCredito = {
             nome,
             valor: parseFloat(valor).toFixed(2),
             prazo, // Mantém exatamente como no select
             status: "por pagar",
         };
-    
-        fetch("http://127.0.0.1:8000/api/credito/", {
+
+        fetch(`${API_BASE_URL}/api/credito/`, {  // ✅ Adicionada a vírgula correta aqui
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(novoCredito),
@@ -52,15 +53,15 @@ const Credito = () => {
             console.error("Erro ao adicionar crédito:", err);
             alert("Erro ao adicionar crédito. Verifique os dados e tente novamente.");
         });
-    
+
         setNome("");
         setValor("");
-        setPrazo("Semanal"); // Mantém coerente com as opções do dropdown
-    };    
+        setPrazo("semanal"); // Mantém coerente com as opções do dropdown
+    };
 
     // Atualizar status de crédito
     const handleUpdateStatus = (id, novoStatus) => {
-        fetch(`http://127.0.0.1:8000/api/credito/${id}/`, {
+        fetch(`${API_BASE_URL}/api/credito/${id}/`, {  // ✅ Adicionada a vírgula correta aqui
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ status: novoStatus }),
@@ -80,7 +81,7 @@ const Credito = () => {
             setCreditos(novosCreditos);
         })
         .catch((err) => console.error("Erro ao atualizar crédito:", err));
-    };    
+    };
 
     // Filtrar para exibir apenas os "por pagar"
     const creditosPendentes = creditos.filter((credito) => credito.status === "por pagar");
@@ -115,14 +116,11 @@ const Credito = () => {
                     <input type="number" placeholder="Valor (R$)" className="w-full p-2 border rounded mb-3" value={valor} onChange={(e) => setValor(e.target.value)} />
                     
                     {/* Dropdown de Prazo */}
-                    {/* Dropdown de Prazo */}
                     <select className="w-full p-2 border rounded mb-3" value={prazo} onChange={(e) => setPrazo(e.target.value)}>
                         <option value="semanal">Semanal</option>
                         <option value="15dias">15 dias</option>
                         <option value="45dias">45 dias</option>
                     </select>
-
-
 
                     <button onClick={handleAddCredito} className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Adicionar Crédito</button>
                 </div>
@@ -173,25 +171,11 @@ const Credito = () => {
                             )}
                         </tbody>
                     </table>
-
-                    {/* Paginação */}
-                    <div className="flex justify-center mt-4 space-x-2">
-                        {[...Array(totalPaginas)].map((_, index) => (
-                            <button
-                                key={index}
-                                className={`px-3 py-1 rounded ${paginaAtual === index + 1 ? "bg-blue-500 text-white" : "bg-gray-300 text-gray-700"}`}
-                                onClick={() => setPaginaAtual(index + 1)}
-                            >
-                                {index + 1}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Botão de Exportar PDF */}
-                    <button onClick={exportarPDF} className="mt-6 bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition duration-200">
-                        Exportar PDF
-                    </button>
                 </div>
+
+                <button onClick={exportarPDF} className="mt-6 bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition duration-200">
+                    Exportar PDF
+                </button>
             </div>
         </Layout>
     );

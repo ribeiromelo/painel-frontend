@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Layout from "../components/Layout";
+import API_BASE_URL from "../config";
 
 const Compras = () => {
     const [compras, setCompras] = useState([]);
@@ -12,7 +13,7 @@ const Compras = () => {
 
     // Carregar compras da API
     useEffect(() => {
-        fetch("http://127.0.0.1:8000/api/compras/")
+        fetch(`${API_BASE_URL}/api/compras/`)
             .then((res) => res.json())
             .then((data) => setCompras(data))
             .catch((err) => console.error("Erro ao carregar compras:", err));
@@ -32,7 +33,7 @@ const Compras = () => {
             status: "pendente",
         };
 
-        fetch("http://127.0.0.1:8000/api/compras/", {
+        fetch(`${API_BASE_URL}/api/compras/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(novaCompra),
@@ -49,7 +50,7 @@ const Compras = () => {
 
     // Atualizar status da compra (pendente/pago)
     const handleUpdateStatus = (id, novoStatus) => {
-        fetch(`http://127.0.0.1:8000/api/compras/${id}/`, {
+        fetch(`${API_BASE_URL}/api/compras/${id}/`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ status: novoStatus }),

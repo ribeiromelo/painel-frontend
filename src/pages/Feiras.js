@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Layout from "../components/Layout";
 import { jsPDF } from "jspdf"; // ✅ IMPORTAÇÃO NO TOPO
+import API_BASE_URL from "../config";
 
 const Feiras = () => {
     const [feiras, setFeiras] = useState([]);
@@ -16,7 +17,7 @@ const Feiras = () => {
         const doc = new jsPDF();
         doc.text("Relatório das Últimas 20 Feiras", 20, 10);
         let y = 20;
-        feirasPaginadas.forEach((feira, index) => {
+        feiras.slice(0, 20).forEach((feira, index) => {
             doc.text(
                 `${index + 1}. Data: ${feira.data} | Faturamento: R$ ${feira.valor_faturado} | Fiado: R$ ${feira.valor_fiado}`,
                 20, y
@@ -28,7 +29,7 @@ const Feiras = () => {
 
     // Carregar feiras da API
     useEffect(() => {
-        fetch("http://127.0.0.1:8000/api/feiras/")
+        fetch(`${API_BASE_URL}/api/feiras/`)
             .then((res) => res.json())
             .then((data) => setFeiras(data))
             .catch((err) => console.error("Erro ao carregar feiras:", err));
@@ -48,14 +49,14 @@ const Feiras = () => {
             valor_fiado: valorFiado,
         };
 
-        fetch("http://127.0.0.1:8000/api/feiras/", {
+        fetch(`${API_BASE_URL}/api/feiras/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(novaFeira),
         })
-        .then((res) => res.json())
-        .then((data) => setFeiras([...feiras, data]))
-        .catch((err) => console.error("Erro ao adicionar feira:", err));
+            .then((res) => res.json())
+            .then((data) => setFeiras([...feiras, data]))
+            .catch((err) => console.error("Erro ao adicionar feira:", err));
 
         setData("");
         setRelatorio("");
@@ -77,11 +78,38 @@ const Feiras = () => {
                 {/* Formulário de Cadastro */}
                 <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg">
                     <h2 className="text-xl font-semibold mb-4">Nova Feira</h2>
-                    <input type="date" className="w-full p-2 border rounded mb-3" value={data} onChange={(e) => setData(e.target.value)} />
-                    <textarea placeholder="Relatório" className="w-full p-2 border rounded mb-3" value={relatorio} onChange={(e) => setRelatorio(e.target.value)} />
-                    <input type="number" placeholder="Faturamento (R$)" className="w-full p-2 border rounded mb-3" value={valorFaturado} onChange={(e) => setValorFaturado(e.target.value)} />
-                    <input type="number" placeholder="Valor Fiado (R$)" className="w-full p-2 border rounded mb-3" value={valorFiado} onChange={(e) => setValorFiado(e.target.value)} />
-                    <button onClick={handleAddFeira} className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Adicionar Feira</button>
+                    <input
+                        type="date"
+                        className="w-full p-2 border rounded mb-3"
+                        value={data}
+                        onChange={(e) => setData(e.target.value)}
+                    />
+                    <textarea
+                        placeholder="Relatório"
+                        className="w-full p-2 border rounded mb-3"
+                        value={relatorio}
+                        onChange={(e) => setRelatorio(e.target.value)}
+                    />
+                    <input
+                        type="number"
+                        placeholder="Faturamento (R$)"
+                        className="w-full p-2 border rounded mb-3"
+                        value={valorFaturado}
+                        onChange={(e) => setValorFaturado(e.target.value)}
+                    />
+                    <input
+                        type="number"
+                        placeholder="Valor Fiado (R$)"
+                        className="w-full p-2 border rounded mb-3"
+                        value={valorFiado}
+                        onChange={(e) => setValorFiado(e.target.value)}
+                    />
+                    <button
+                        onClick={handleAddFeira}
+                        className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+                    >
+                        Adicionar Feira
+                    </button>
                 </div>
 
                 {/* Tabela de Feiras */}
@@ -121,16 +149,21 @@ const Feiras = () => {
                         {[...Array(totalPaginas)].map((_, index) => (
                             <button
                                 key={index}
-                                className={`px-3 py-1 rounded ${paginaAtual === index + 1 ? "bg-blue-500 text-white" : "bg-gray-300 text-gray-700"}`}
+                                className={`px-3 py-1 rounded ${
+                                    paginaAtual === index + 1 ? "bg-blue-500 text-white" : "bg-gray-300 text-gray-700"
+                                }`}
                                 onClick={() => setPaginaAtual(index + 1)}
                             >
                                 {index + 1}
                             </button>
                         ))}
                     </div>
-                    
+
                     {/* Botão de Exportar PDF */}
-                    <button onClick={exportarPDF} className="mt-6 bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition duration-200">
+                    <button
+                        onClick={exportarPDF}
+                        className="mt-6 bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition duration-200"
+                    >
                         Exportar PDF
                     </button>
                 </div>
