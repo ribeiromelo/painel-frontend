@@ -11,46 +11,86 @@ const Compras = () => {
     const [paginaAtual, setPaginaAtual] = useState(1);
     const registrosPorPagina = 20;
 
-    // Obtém o token JWT do localStorage
-    const token = localStorage.getItem("access_token");
+    // Obtém os tokens armazenados
+    let accessToken = localStorage.getItem("access_token");
+    let refreshToken = localStorage.getItem("refresh_token");
 
-    // Carregar compras da API com autenticação
-    useEffect(() => {
-        if (!token) {
-            console.error("Erro: Token de autenticação não encontrado.");
-            return;
+    // Função para atualizar o token caso esteja expirado
+    const refreshAccessToken = async () => {
+        if (!refreshToken) {
+            console.error("Erro: Nenhum refresh token encontrado. Redirecionando para login.");
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("refresh_token");
+            window.location.href = "/login"; // Redireciona para login
+            return null;
         }
 
-        fetch(`${API_BASE_URL}/api/compras/`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`, // Envia o token no cabeçalho
-            },
-        })
-        .then((res) => {
-            if (res.status === 401) {
-                console.error("Erro 401: Token inválido ou expirado.");
-                return [];
+        try {
+            const res = await fetch(`${API_BASE_URL}/auth/token/refresh/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ refresh: refreshToken }),
+            });
+
+            if (!res.ok) {
+                console.error("Erro ao atualizar token. Redirecionando para login.");
+                localStorage.removeItem("access_token");
+                localStorage.removeItem("refresh_token");
+                window.location.href = "/login";
+                return null;
             }
-            return res.json();
-        })
-        .then((data) => {
-            console.log("Dados recebidos da API:", data);
+
+            const data = await res.json();
+            localStorage.setItem("access_token", data.access);
+            return data.access;
+        } catch (err) {
+            console.error("Erro ao tentar atualizar token:", err);
+            return null;
+        }
+    };
+
+    // Função para carregar compras da API
+    const fetchCompras = async () => {
+        if (!accessToken) {
+            accessToken = await refreshAccessToken();
+            if (!accessToken) return;
+        }
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/compras/`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${accessToken}`,
+                },
+            });
+
+            if (res.status === 401) {
+                console.warn("Token expirado, tentando atualizar...");
+                accessToken = await refreshAccessToken();
+                if (!accessToken) return;
+                
+                return fetchCompras(); // Chama novamente a função com o novo token
+            }
+
+            const data = await res.json();
             if (Array.isArray(data)) {
                 setCompras(data);
             } else {
                 console.error("Erro: API retornou um valor inesperado!", data);
                 setCompras([]);
             }
-        })
-        .catch((err) => {
+        } catch (err) {
             console.error("Erro ao carregar compras:", err);
-            setCompras([]);
-        });
-    }, [token]);
+        }
+    };
 
-    const handleAddCompra = () => {
+    // Carregar compras quando a página for carregada
+    useEffect(() => {
+        fetchCompras();
+    }, []);
+
+    const handleAddCompra = async () => {
         if (!fornecedor || !valor || !dataPagamento) {
             alert("Preencha todos os campos!");
             return;
@@ -64,11 +104,16 @@ const Compras = () => {
             status: "pendente",
         };
 
+        if (!accessToken) {
+            accessToken = await refreshAccessToken();
+            if (!accessToken) return;
+        }
+
         fetch(`${API_BASE_URL}/api/compras/`, {
             method: "POST",
-            headers: { 
+            headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`,  // Enviando o token JWT
+                "Authorization": `Bearer ${accessToken}`,
             },
             body: JSON.stringify(novaCompra),
         })
@@ -83,12 +128,17 @@ const Compras = () => {
     };
 
     // Atualizar status da compra (pendente/pago)
-    const handleUpdateStatus = (id, novoStatus) => {
+    const handleUpdateStatus = async (id, novoStatus) => {
+        if (!accessToken) {
+            accessToken = await refreshAccessToken();
+            if (!accessToken) return;
+        }
+
         fetch(`${API_BASE_URL}/api/compras/${id}/`, {
             method: "PATCH",
-            headers: { 
+            headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`,
+                "Authorization": `Bearer ${accessToken}`,
             },
             body: JSON.stringify({ status: novoStatus }),
         })
@@ -129,56 +179,6 @@ const Compras = () => {
                     </select>
 
                     <button onClick={handleAddCompra} className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Adicionar Compra</button>
-                </div>
-
-                {/* Tabela de Compras */}
-                <div className="mt-8 w-full max-w-2xl">
-                    <h2 className="text-xl font-semibold mb-4">Compras Registradas</h2>
-                    <table className="w-full bg-white shadow-md rounded-lg overflow-hidden">
-                        <thead className="bg-gray-200">
-                            <tr>
-                                <th className="p-2">Fornecedor</th>
-                                <th className="p-2">Valor</th>
-                                <th className="p-2">Data Pagamento</th>
-                                <th className="p-2">Método</th>
-                                <th className="p-2">Status</th>
-                                <th className="p-2">Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {comprasPaginadas.length === 0 ? (
-                                <tr>
-                                    <td colSpan="6" className="text-center p-4 text-gray-500">
-                                        Nenhuma compra registrada.
-                                    </td>
-                                </tr>
-                            ) : (
-                                comprasPaginadas.map((compra) => (
-                                    <tr key={compra.id} className="border-t">
-                                        <td className="p-2">{compra.fornecedor}</td>
-                                        <td className="p-2">R$ {compra.valor}</td>
-                                        <td className="p-2">{compra.data_pagamento}</td>
-                                        <td className="p-2">{compra.metodo_pagamento}</td>
-                                        <td className="p-2">
-                                            <span className={`px-2 py-1 rounded text-white ${compra.status === "pago" ? "bg-green-500" : "bg-red-500"}`}>
-                                                {compra.status}
-                                            </span>
-                                        </td>
-                                        <td className="p-2">
-                                            <select 
-                                                className="p-1 border rounded"
-                                                value={compra.status}
-                                                onChange={(e) => handleUpdateStatus(compra.id, e.target.value)}
-                                            >
-                                                <option value="pendente">Pendente</option>
-                                                <option value="pago">Pago</option>
-                                            </select>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
                 </div>
             </div>
         </Layout>
