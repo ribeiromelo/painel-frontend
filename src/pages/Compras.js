@@ -13,12 +13,12 @@ const Compras = () => {
 
     // Obtém os tokens armazenados
     let accessToken = localStorage.getItem("access_token");
-    let refreshToken = localStorage.getItem("refresh_token");
 
-    // Atualiza o token caso esteja expirado
+    // Atualiza token se estiver expirado
     const refreshAccessToken = async () => {
+        const refreshToken = localStorage.getItem("refresh_token");
         if (!refreshToken) {
-            console.error("Erro: Nenhum refresh token encontrado. Redirecionando para login.");
+            console.error("Sem refresh token, redirecionando para login.");
             localStorage.removeItem("access_token");
             localStorage.removeItem("refresh_token");
             window.location.href = "/login";
@@ -33,7 +33,7 @@ const Compras = () => {
             });
 
             if (!res.ok) {
-                console.error("Erro ao atualizar token. Redirecionando para login.");
+                console.error("Erro ao renovar token. Redirecionando para login.");
                 localStorage.removeItem("access_token");
                 localStorage.removeItem("refresh_token");
                 window.location.href = "/login";
@@ -49,7 +49,7 @@ const Compras = () => {
         }
     };
 
-    // Carregar compras da API
+    // Carregar compras pendentes da API
     const fetchCompras = async () => {
         if (!accessToken) {
             accessToken = await refreshAccessToken();
@@ -66,7 +66,7 @@ const Compras = () => {
             });
 
             if (res.status === 401) {
-                console.warn("Token expirado, tentando atualizar...");
+                console.warn("Token expirado, tentando renovar...");
                 accessToken = await refreshAccessToken();
                 if (!accessToken) return;
                 return fetchCompras(); // Chama novamente a função com o novo token
@@ -74,7 +74,8 @@ const Compras = () => {
 
             const data = await res.json();
             if (Array.isArray(data)) {
-                setCompras(data);
+                // Filtrar apenas os pendentes para exibição na tabela
+                setCompras(data.filter((compra) => compra.status === "pendente"));
             } else {
                 console.error("Erro: API retornou um valor inesperado!", data);
                 setCompras([]);
@@ -84,7 +85,6 @@ const Compras = () => {
         }
     };
 
-    // Carregar compras ao entrar na página
     useEffect(() => {
         fetchCompras();
     }, []);
@@ -118,7 +118,7 @@ const Compras = () => {
         })
         .then((res) => res.json())
         .then((data) => {
-            setCompras((prevCompras) => [...prevCompras, data]);
+            setCompras([...compras, data]);
         })
         .catch((err) => console.error("Erro ao adicionar compra:", err));
 
@@ -128,7 +128,7 @@ const Compras = () => {
         setMetodoPagamento("dinheiro");
     };
 
-    // Atualizar status da compra
+    // Atualizar status da compra e remover da lista se for "pago"
     const handleUpdateStatus = async (id, novoStatus) => {
         if (!accessToken) {
             accessToken = await refreshAccessToken();
@@ -144,12 +144,9 @@ const Compras = () => {
             body: JSON.stringify({ status: novoStatus }),
         })
         .then((res) => res.json())
-        .then((data) => {
-            setCompras((prevCompras) =>
-                prevCompras.map((compra) =>
-                    compra.id === id ? { ...compra, status: novoStatus } : compra
-                )
-            );
+        .then(() => {
+            // Remove da lista se o status for alterado para "pago"
+            setCompras(compras.filter((compra) => compra.id !== id));
         })
         .catch((err) => console.error("Erro ao atualizar status:", err));
     };
@@ -184,18 +181,37 @@ const Compras = () => {
 
                 {/* Exibição dos registros */}
                 <div className="mt-8 w-full max-w-2xl">
-                    <h2 className="text-xl font-semibold mb-4">Compras Registradas</h2>
-                    {compras.length === 0 ? (
-                        <p className="text-gray-500 text-center">Nenhuma compra registrada.</p>
-                    ) : (
-                        <ul>
-                            {compras.map((compra) => (
-                                <li key={compra.id}>
-                                    {compra.fornecedor} - R$ {compra.valor} - {compra.data_pagamento} - {compra.status}
-                                </li>
+                    <h2 className="text-xl font-semibold mb-4">Compras Pendentes</h2>
+                    <table className="w-full bg-white shadow-md rounded-lg overflow-hidden">
+                        <thead className="bg-gray-200">
+                            <tr>
+                                <th className="p-2">Fornecedor</th>
+                                <th className="p-2">Valor</th>
+                                <th className="p-2">Data Pagamento</th>
+                                <th className="p-2">Método</th>
+                                <th className="p-2">Status</th>
+                                <th className="p-2">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {comprasPaginadas.map((compra) => (
+                                <tr key={compra.id}>
+                                    <td>{compra.fornecedor}</td>
+                                    <td>R$ {compra.valor}</td>
+                                    <td>{compra.data_pagamento}</td>
+                                    <td>{compra.metodo_pagamento}</td>
+                                    <td>
+                                        <span className="px-2 py-1 rounded text-white bg-red-500">Pendente</span>
+                                    </td>
+                                    <td>
+                                        <button onClick={() => handleUpdateStatus(compra.id, "pago")} className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">
+                                            Marcar como Pago
+                                        </button>
+                                    </td>
+                                </tr>
                             ))}
-                        </ul>
-                    )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </Layout>
