@@ -3,7 +3,7 @@ import Layout from "../components/Layout";
 import API_BASE_URL from "../config";
 
 const Compras = () => {
-    const [compras, setCompras] = useState([]);  // Garantindo que começa como array
+    const [compras, setCompras] = useState([]);
     const [fornecedor, setFornecedor] = useState("");
     const [valor, setValor] = useState("");
     const [dataPagamento, setDataPagamento] = useState("");
@@ -11,24 +11,44 @@ const Compras = () => {
     const [paginaAtual, setPaginaAtual] = useState(1);
     const registrosPorPagina = 20;
 
-    // Carregar compras da API
+    // Obtém o token JWT do localStorage
+    const token = localStorage.getItem("access_token");
+
+    // Carregar compras da API com autenticação
     useEffect(() => {
-        fetch(`${API_BASE_URL}/api/compras/`)
-            .then((res) => res.json())
-            .then((data) => {
-                console.log("Dados recebidos da API:", data); // Debug
-                if (Array.isArray(data)) {
-                    setCompras(data);
-                } else {
-                    console.error("Erro: API retornou um valor inesperado!", data);
-                    setCompras([]); // Garantindo que compras seja um array
-                }
-            })
-            .catch((err) => {
-                console.error("Erro ao carregar compras:", err);
-                setCompras([]); // Em caso de erro, mantém um array vazio
-            });
-    }, []);
+        if (!token) {
+            console.error("Erro: Token de autenticação não encontrado.");
+            return;
+        }
+
+        fetch(`${API_BASE_URL}/api/compras/`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`, // Envia o token no cabeçalho
+            },
+        })
+        .then((res) => {
+            if (res.status === 401) {
+                console.error("Erro 401: Token inválido ou expirado.");
+                return [];
+            }
+            return res.json();
+        })
+        .then((data) => {
+            console.log("Dados recebidos da API:", data);
+            if (Array.isArray(data)) {
+                setCompras(data);
+            } else {
+                console.error("Erro: API retornou um valor inesperado!", data);
+                setCompras([]);
+            }
+        })
+        .catch((err) => {
+            console.error("Erro ao carregar compras:", err);
+            setCompras([]);
+        });
+    }, [token]);
 
     const handleAddCompra = () => {
         if (!fornecedor || !valor || !dataPagamento) {
@@ -46,7 +66,10 @@ const Compras = () => {
 
         fetch(`${API_BASE_URL}/api/compras/`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,  // Enviando o token JWT
+            },
             body: JSON.stringify(novaCompra),
         })
         .then((res) => res.json())
@@ -63,7 +86,10 @@ const Compras = () => {
     const handleUpdateStatus = (id, novoStatus) => {
         fetch(`${API_BASE_URL}/api/compras/${id}/`, {
             method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+            },
             body: JSON.stringify({ status: novoStatus }),
         })
         .then((res) => res.json())
@@ -77,7 +103,7 @@ const Compras = () => {
         .catch((err) => console.error("Erro ao atualizar status:", err));
     };
 
-    // Paginação (verificando se compras é realmente um array)
+    // Paginação
     const indiceInicial = (paginaAtual - 1) * registrosPorPagina;
     const indiceFinal = indiceInicial + registrosPorPagina;
     const comprasPaginadas = Array.isArray(compras) ? compras.slice(indiceInicial, indiceFinal) : [];
@@ -95,7 +121,6 @@ const Compras = () => {
                     <input type="number" placeholder="Valor (R$)" className="w-full p-2 border rounded mb-3" value={valor} onChange={(e) => setValor(e.target.value)} />
                     <input type="date" className="w-full p-2 border rounded mb-3" value={dataPagamento} onChange={(e) => setDataPagamento(e.target.value)} />
 
-                    {/* Novo campo para Método de Pagamento */}
                     <label className="block text-gray-700">Método de Pagamento:</label>
                     <select className="w-full p-2 border rounded mb-3" value={metodoPagamento} onChange={(e) => setMetodoPagamento(e.target.value)}>
                         <option value="cheque">Cheque</option>
