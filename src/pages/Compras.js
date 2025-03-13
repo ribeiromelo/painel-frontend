@@ -3,7 +3,7 @@ import Layout from "../components/Layout";
 import API_BASE_URL from "../config";
 
 const Compras = () => {
-    const [compras, setCompras] = useState([]);
+    const [compras, setCompras] = useState([]);  // Garantindo que começa como array
     const [fornecedor, setFornecedor] = useState("");
     const [valor, setValor] = useState("");
     const [dataPagamento, setDataPagamento] = useState("");
@@ -15,8 +15,19 @@ const Compras = () => {
     useEffect(() => {
         fetch(`${API_BASE_URL}/api/compras/`)
             .then((res) => res.json())
-            .then((data) => setCompras(data))
-            .catch((err) => console.error("Erro ao carregar compras:", err));
+            .then((data) => {
+                console.log("Dados recebidos da API:", data); // Debug
+                if (Array.isArray(data)) {
+                    setCompras(data);
+                } else {
+                    console.error("Erro: API retornou um valor inesperado!", data);
+                    setCompras([]); // Garantindo que compras seja um array
+                }
+            })
+            .catch((err) => {
+                console.error("Erro ao carregar compras:", err);
+                setCompras([]); // Em caso de erro, mantém um array vazio
+            });
     }, []);
 
     const handleAddCompra = () => {
@@ -66,11 +77,11 @@ const Compras = () => {
         .catch((err) => console.error("Erro ao atualizar status:", err));
     };
 
-    // Paginação
+    // Paginação (verificando se compras é realmente um array)
     const indiceInicial = (paginaAtual - 1) * registrosPorPagina;
     const indiceFinal = indiceInicial + registrosPorPagina;
-    const comprasPaginadas = compras.slice(indiceInicial, indiceFinal);
-    const totalPaginas = Math.ceil(compras.length / registrosPorPagina);
+    const comprasPaginadas = Array.isArray(compras) ? compras.slice(indiceInicial, indiceFinal) : [];
+    const totalPaginas = Array.isArray(compras) ? Math.ceil(compras.length / registrosPorPagina) : 1;
 
     return (
         <Layout>
@@ -143,19 +154,6 @@ const Compras = () => {
                             )}
                         </tbody>
                     </table>
-
-                    {/* Paginação */}
-                    <div className="flex justify-center mt-4 space-x-2">
-                        {[...Array(totalPaginas)].map((_, index) => (
-                            <button
-                                key={index}
-                                className={`px-3 py-1 rounded ${paginaAtual === index + 1 ? "bg-blue-500 text-white" : "bg-gray-300 text-gray-700"}`}
-                                onClick={() => setPaginaAtual(index + 1)}
-                            >
-                                {index + 1}
-                            </button>
-                        ))}
-                    </div>
                 </div>
             </div>
         </Layout>
